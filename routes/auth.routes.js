@@ -5,7 +5,10 @@ const router = new Router();
 const bcryptjs = require('bcryptjs');
 const saltRounds = 10;
 const User = require('../models/User.model');
+const Post = require('../models/Post.model');
 const mongoose = require('mongoose');
+const multer = require('multer');
+const upload = multer({ dest: './public/uploads'});
 
 const routeGuard = require('../configs/route-guard.config');
 
@@ -17,7 +20,7 @@ const routeGuard = require('../configs/route-guard.config');
 router.get('/signup', (req, res) => res.render('auth/signup'));
 
 // .post() route ==> to process form data
-router.post('/signup', (req, res, next) => {
+router.post('/signup', upload.single('profile-picture'), (req, res, next) => {
   const { username, email, password } = req.body;
 
   if (!username || !email || !password) {
@@ -45,7 +48,8 @@ router.post('/signup', (req, res, next) => {
         // passwordHash => this is the key from the User model
         //     ^
         //     |            |--> this is placeholder (how we named returning value from the previous method (.hash()))
-        passwordHash: hashedPassword
+        passwordHash: hashedPassword,
+        photoPath: `/uploads/${req.file.filename}`,
       });
     })
     .then(userFromDB => {
@@ -112,3 +116,29 @@ router.get('/userProfile', routeGuard, (req, res) => {
 });
 
 module.exports = router;
+
+////////////////////////////////////////////////////////////////////////
+///////////////////////////// POST ////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+
+router.get('/post', routeGuard, (req, res) => res.render('auth/post'));
+
+router.post('/post', routeGuard, upload.single('picture'), (req, res) => {
+  const { content, picName } = req.body;
+  const creatorId = req.session.currentUser._id;
+  const picPath = `/uploads/${req.file.filename}`;
+
+  Post.create({ creatorId, content, picName, picPath })
+    .then(postFromDb => {
+      console.log(`Post created: ${postFromDb}`);
+      res.redirect('/');
+    })
+    .catch(err => {
+      if(err instanceof mongoose.Error.ValidationError) {
+        res.status(500).render('auth/post', { errorMessage: err.message})
+      } else {
+        next(err);
+      }
+    })
+  res.redirect('/');
+});

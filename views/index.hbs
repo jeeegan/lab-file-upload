@@ -1,2 +1,12 @@
-<h1>{{title}}</h1>
-<p>Welcome Ironhacker!</p>
+<h1>Tumblr Clone</h1>
+<p>Welcome!</p>
+<section>
+  {{#if posts}}
+    {{#each posts}}
+      <p>{{this.content}}</p>
+      <img src="{{this.picPath}}" alt="{{this.picName}}">
+    {{/each}}
+  {{else}}
+  <p>No posts yet!</p>
+  {{/if}}
+</section>
